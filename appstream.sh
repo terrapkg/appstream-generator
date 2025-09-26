@@ -15,8 +15,9 @@ appstream-builder \
     --origin="Terra" \
     --temp-dir=tmp \
     --icons-dir="$OUTPUT/icons" \
+    --old-metadata="$OUTPUT/oldmeta" \
     --cache-dir="$OUTPUT/cache" \
-    --basename=terra-42 \
+    --basename=terra42 \
     --log-dir="$OUTPUT/logs" \
     --include-failed \
     --packages-dir="$T42_DIR" \

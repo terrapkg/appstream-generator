@@ -85,7 +85,7 @@ def build_appstream(path: str, output_dir: str):
     logger = logging.getLogger(f"builder-{repo_name}")
     appstream_builder = "appstream-builder"
     args = [
-        "--verbose",
+        # "--verbose",
         "--veto-ignore=missing-parents",
         "--output-dir",
         f"{output_dir}/appstream",
@@ -104,6 +104,8 @@ def build_appstream(path: str, output_dir: str):
         "terra",
         "--packages-dir",
         path,
+        "--old-metadata",
+        f"{output_dir}../latest/appstream",
     ]
 
     full_args = [appstream_builder] + args
@@ -138,8 +140,60 @@ def build_appstream(path: str, output_dir: str):
         stdout_thread.join()
         stderr_thread.join()
 
-    finally:
-        return output_dir
+    except Exception as e:
+        logger.error(f"Error running appstream-builder: {e}")
+        raise
+    # finally:
+    # return output_dir
+
+    # now go to output_dir/icons
+    screenshots_dir = os.path.join(output_dir, "icons")
+    logger.info(f"Checking for screenshots in {screenshots_dir}")
+    if os.path.exists(screenshots_dir):
+        for dir in os.scandir(screenshots_dir):
+            logger.info(f"found screenshots dir at {dir.path}")
+            if dir.is_dir():
+                proc = subprocess.run(
+                    [
+                        "tar",
+                        "-C",
+                        dir.path,
+                        "-czf",
+                        os.path.join(
+                            output_dir,
+                            "appstream",
+                            f"{repo_name}-icons-{dir.name}.tar.gz",
+                        ),
+                        ".",
+                        "--strip-components=2",
+                    ],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                )
+                stdout_thread = Thread(
+                    target=log_stream,
+                    args=(
+                        process.stdout,
+                        lambda msg: logger.info(msg, extra={"child_pid": process.pid}),
+                    ),
+                )
+                stderr_thread = Thread(
+                    target=log_stream,
+                    args=(
+                        process.stderr,
+                        lambda msg: logger.error(msg, extra={"child_pid": process.pid}),
+                    ),
+                )
+                stdout_thread.start()
+                stderr_thread.start()
+
+                process.wait()
+
+                stdout_thread.join()
+                stderr_thread.join()
+
+    return output_dir
 
 
 def cleanup_old_composes(basedir: str):
