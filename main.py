@@ -85,7 +85,7 @@ def build_appstream(path: str, output_dir: str):
     logger = logging.getLogger(f"builder-{repo_name}")
     appstream_builder = "appstream-builder"
     args = [
-        # "--verbose",
+        "--verbose",
         "--veto-ignore=missing-parents",
         "--output-dir",
         f"{output_dir}/appstream",
@@ -153,7 +153,7 @@ def build_appstream(path: str, output_dir: str):
         for dir in os.scandir(screenshots_dir):
             logger.info(f"found screenshots dir at {dir.path}")
             if dir.is_dir():
-                proc = subprocess.run(
+                proc = subprocess.Popen(
                     [
                         "tar",
                         "-C",
@@ -174,14 +174,14 @@ def build_appstream(path: str, output_dir: str):
                 stdout_thread = Thread(
                     target=log_stream,
                     args=(
-                        process.stdout,
+                        proc.stdout,
                         lambda msg: logger.info(msg, extra={"child_pid": process.pid}),
                     ),
                 )
                 stderr_thread = Thread(
                     target=log_stream,
                     args=(
-                        process.stderr,
+                        proc.stderr,
                         lambda msg: logger.error(msg, extra={"child_pid": process.pid}),
                     ),
                 )
