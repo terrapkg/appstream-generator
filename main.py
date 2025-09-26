@@ -85,7 +85,6 @@ def build_appstream(path: str, output_dir: str):
     logger = logging.getLogger(f"builder-{repo_name}")
     appstream_builder = "appstream-builder"
     args = [
-        "--add-cache-id",
         "--verbose",
         "--veto-ignore=missing-parents",
         "--output-dir",
@@ -101,6 +100,8 @@ def build_appstream(path: str, output_dir: str):
         "--log-dir",
         f"{output_dir}/logs",
         "--include-failed",
+        "--origin",
+        "terra",
         "--packages-dir",
         path,
     ]
