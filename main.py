@@ -13,10 +13,6 @@ handler = logging.StreamHandler()
 handler.setFormatter(Logfmter(keys=["level", "name"], mapping={"level": "levelname"}))
 logging.basicConfig(handlers=[handler], level=logging.INFO)
 
-
-logger.error(
-    "hello",
-)  # at=ERROR msg=hello alpha=1
 # logging.error({"token": "Hello, World!"}) # at=ERROR token="Hello, World!"
 
 
