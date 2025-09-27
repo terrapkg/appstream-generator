@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 import logging
 import shutil
 from logfmter import Logfmter
+import concurrent.futures
 
 logger = logging.getLogger("appstream-generator")
 
@@ -33,6 +34,9 @@ out_dir = os.environ["OUTPUT_DIR"]
 
 # Limits N number of old entries
 old_limit = int(os.environ.get("OLD_LIMIT", 5))
+
+# Max concurrent tasks
+max_workers = int(os.environ.get("MAX_WORKERS", 5))
 
 
 def scan_base_dir(base_dir: str):
@@ -273,13 +277,20 @@ def process_repo(path: str):
     except Exception as e:
         logger.error(f"Error processing repo {repo_name}: {e}")
         return
+    finally:
+        return True
 
 
 def main():
     # setup_logging()
     # logger.info("test")
+    thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
+    futures = []
     for dir in scan_base_dir(base_dir):
-        process_repo(dir)
+        futures.append(thread_pool.submit(process_repo, dir))
+    _ = concurrent.futures.wait(futures)
+    thread_pool.shutdown(wait=True)
+    thread_pool = None
 
 
 if __name__ == "__main__":
