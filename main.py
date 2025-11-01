@@ -87,6 +87,7 @@ def build_appstream(path: str, output_dir: str):
     args = [
         "--verbose",
         "--veto-ignore=missing-parents",
+        "--veto-ignore=missing-info",
         "--output-dir",
         f"{output_dir}/appstream",
         "--temp-dir",
