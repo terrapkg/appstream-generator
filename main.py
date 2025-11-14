@@ -79,7 +79,7 @@ def log_stream(stream, logger_obj):
             line = line.rstrip()
             if line:
                 # Check if this line starts XML output
-                if "<components" in line or "<component" in line:
+                if "<components" in line:
                     in_xml = True
                     xml_buffer = []
                     # Parse log level from the line before XML starts
@@ -96,7 +96,7 @@ def log_stream(stream, logger_obj):
                 elif in_xml:
                     xml_buffer.append(line)
                     # Check if XML is complete
-                    if "</components>" in line or "</component>" in line:
+                    if "</components>" in line:
                         # Combine all XML lines into one
                         combined_xml = " ".join(xml_buffer)
                         logger_obj.log(xml_level, combined_xml)
