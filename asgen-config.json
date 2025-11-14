@@ -1,14 +1,17 @@
 {
     "ProjectName": "Terra",
-    "ArchiveRoot": "/srv/archive.tanglu.org/tanglu/",
+    "ArchiveRoot": "tmp/",
     "Backend": "rpmmd",
     "Features": {
-        "processDesktop": true
+        "processDesktop": true,
+        "createScreenshotsStore": false,
+        "optimizePNGSize": false,
+        "screenshotVideos": false
     },
     "Suites": {
-        "terra42": {
+        "terra": {
             "sections": ["."],
-            "architectures": ["x86_64", "i686", "aarch64"]
+            "architectures": ["."]
         }
     },
     "Icons": {
