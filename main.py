@@ -65,6 +65,10 @@ def format_output_path(out_dir: str, repo_name: str):
 def log_stream(stream, logger_obj):
     """Read from stream and log each flush (buffered output)"""
     buffer = ""
+    xml_buffer = []
+    in_xml = False
+    xml_level = logging.INFO
+
     while True:
         chunk = stream.read(4096)
         if not chunk:
@@ -74,20 +78,49 @@ def log_stream(stream, logger_obj):
             line, buffer = buffer.split("\n", 1)
             line = line.rstrip()
             if line:
-                # Parse log level from message
-                level = logging.INFO  # default
-                if "DEBUG:" in line:
-                    level = logging.DEBUG
-                elif "WARNING:" in line:
-                    level = logging.WARNING
-                elif "ERROR:" in line:
-                    level = logging.ERROR
-                elif "CRITICAL:" in line:
-                    level = logging.CRITICAL
+                # Check if this line starts XML output
+                if "<components" in line or "<component" in line:
+                    in_xml = True
+                    xml_buffer = []
+                    # Parse log level from the line before XML starts
+                    xml_level = logging.INFO
+                    if "DEBUG:" in line:
+                        xml_level = logging.DEBUG
+                    elif "WARNING:" in line:
+                        xml_level = logging.WARNING
+                    elif "ERROR:" in line:
+                        xml_level = logging.ERROR
+                    elif "CRITICAL:" in line:
+                        xml_level = logging.CRITICAL
+                    xml_buffer.append(line)
+                elif in_xml:
+                    xml_buffer.append(line)
+                    # Check if XML is complete
+                    if "</components>" in line or "</component>" in line:
+                        # Combine all XML lines into one
+                        combined_xml = " ".join(xml_buffer)
+                        logger_obj.log(xml_level, combined_xml)
+                        in_xml = False
+                        xml_buffer = []
+                else:
+                    # Parse log level from message
+                    level = logging.INFO  # default
+                    if "DEBUG:" in line:
+                        level = logging.DEBUG
+                    elif "WARNING:" in line:
+                        level = logging.WARNING
+                    elif "ERROR:" in line:
+                        level = logging.ERROR
+                    elif "CRITICAL:" in line:
+                        level = logging.CRITICAL
 
-                logger_obj.log(level, line)
+                    logger_obj.log(level, line)
+
     # Log any remaining buffered output
-    if buffer.strip():
+    if in_xml and xml_buffer:
+        combined_xml = " ".join(xml_buffer)
+        logger_obj.log(xml_level, combined_xml)
+    elif buffer.strip():
         logger_obj.info(buffer.strip())
     stream.close()
 
