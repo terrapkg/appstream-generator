@@ -1,6 +1,9 @@
 # dev scratch
 out/
 tmp/
+cache/
+db/
+export/
 
 # yup, this is developer stuff
 docker-compose.yml

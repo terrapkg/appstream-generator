@@ -1,11 +1,12 @@
+import concurrent.futures
+import logging
 import os
+import shutil
 import subprocess
 from threading import Thread
+
 from dotenv import load_dotenv
-import logging
-import shutil
 from logfmter import Logfmter
-import concurrent.futures
 
 logger = logging.getLogger("appstream-generator")
 
@@ -61,7 +62,7 @@ def format_output_path(out_dir: str, repo_name: str):
 # - latest run gets symlinked to latest
 
 
-def log_stream(stream, log_func):
+def log_stream(stream, logger_obj):
     """Read from stream and log each flush (buffered output)"""
     buffer = ""
     while True:
@@ -73,10 +74,21 @@ def log_stream(stream, log_func):
             line, buffer = buffer.split("\n", 1)
             line = line.rstrip()
             if line:
-                log_func(line)
+                # Parse log level from message
+                level = logging.INFO  # default
+                if "DEBUG:" in line:
+                    level = logging.DEBUG
+                elif "WARNING:" in line:
+                    level = logging.WARNING
+                elif "ERROR:" in line:
+                    level = logging.ERROR
+                elif "CRITICAL:" in line:
+                    level = logging.CRITICAL
+
+                logger_obj.log(level, line)
     # Log any remaining buffered output
     if buffer.strip():
-        log_func(buffer.strip())
+        logger_obj.info(buffer.strip())
     stream.close()
 
 
@@ -122,14 +134,14 @@ def build_appstream(path: str, output_dir: str):
             target=log_stream,
             args=(
                 process.stdout,
-                lambda msg: logger.info(msg, extra={"child_pid": process.pid}),
+                logger,
             ),
         )
         stderr_thread = Thread(
             target=log_stream,
             args=(
                 process.stderr,
-                lambda msg: logger.error(msg, extra={"child_pid": process.pid}),
+                logger,
             ),
         )
 
@@ -176,14 +188,14 @@ def build_appstream(path: str, output_dir: str):
                     target=log_stream,
                     args=(
                         proc.stdout,
-                        lambda msg: logger.info(msg, extra={"child_pid": process.pid}),
+                        logger,
                     ),
                 )
                 stderr_thread = Thread(
                     target=log_stream,
                     args=(
                         proc.stderr,
-                        lambda msg: logger.error(msg, extra={"child_pid": process.pid}),
+                        logger,
                     ),
                 )
                 stdout_thread.start()
@@ -261,6 +273,15 @@ def process_repo(path: str):
     logger.info(f"Outputting to {compose_out}")
 
     try:
+        # hack: symlink os/repodata to repodata in the path
+        repodata_src = os.path.join(path, "repodata")
+        os_dir = os.path.join(path, "os")
+        os.makedirs(os_dir, exist_ok=True)
+        os_repodata_link = os.path.join(os_dir, "repodata")
+        if not os.path.exists(os_repodata_link) and os.path.exists(repodata_src):
+            logger.info(f"Linking {os_repodata_link} to {repodata_src}")
+            os.symlink(repodata_src, os_repodata_link)
+        # end symlink
         os.makedirs(compose_out, exist_ok=True)
         output = build_appstream(path, compose_out)
         latest_path = os.path.join(out_base_dir, "latest")
