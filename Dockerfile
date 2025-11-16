@@ -3,6 +3,8 @@ FROM fedora:42 AS base
 RUN --mount=type=cache,target=/var/cache/ dnf install -y \
     --setopt=install_weak_deps=False \
     libappstream-glib-builder \
+    gdk-pixbuf2 \
+    rsvg-pixbuf-loader \
     python3 \
     uv \
     git
