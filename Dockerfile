@@ -1,4 +1,4 @@
-FROM fedora:latest AS base
+FROM ghcr.io/terrapkg/builder:frawhide AS base
 
 RUN --mount=type=cache,target=/var/cache/ dnf install -y \
     --setopt=install_weak_deps=False \
@@ -7,7 +7,9 @@ RUN --mount=type=cache,target=/var/cache/ dnf install -y \
     rsvg-pixbuf-loader \
     python3 \
     uv \
-    git
+    git \
+    appstream \
+    terra-appstream-helper
 
 FROM base AS runtime
 
