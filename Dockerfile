@@ -1,13 +1,14 @@
-FROM fedora:42 AS base
+FROM ghcr.io/terrapkg/builder:frawhide AS base
 
-RUN --mount=type=cache,target=/var/cache/ dnf install -y \
-    --setopt=install_weak_deps=False \
+RUN dnf install -y \
     libappstream-glib-builder \
     gdk-pixbuf2 \
     rsvg-pixbuf-loader \
-    python3 \
+    python3.13 \
     uv \
-    git
+    git-core \
+    appstream \
+    terra-appstream-helper
 
 FROM base AS runtime
 
