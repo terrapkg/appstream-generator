@@ -1,4 +1,4 @@
-FROM fedora:42 AS base
+FROM fedora:latest AS base
 
 RUN --mount=type=cache,target=/var/cache/ dnf install -y \
     --setopt=install_weak_deps=False \
