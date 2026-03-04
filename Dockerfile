@@ -6,10 +6,8 @@ RUN dnf install -y \
     rsvg-pixbuf-loader \
     python3.13 \
     uv \
-    git-core \
-    appstream \
-    terra-appstream-helper
-
+    appstream
+    
 FROM base AS runtime
 
 ADD . /app
