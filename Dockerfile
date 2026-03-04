@@ -6,7 +6,7 @@ RUN dnf install -y \
     rsvg-pixbuf-loader \
     python3 \
     uv \
-    git \
+    git-core \
     appstream \
     terra-appstream-helper
 
