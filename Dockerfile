@@ -1,7 +1,6 @@
 FROM ghcr.io/terrapkg/builder:frawhide AS base
 
-RUN --mount=type=cache,target=/var/cache/ dnf install -y \
-    --setopt=install_weak_deps=False \
+RUN dnf install -y \
     libappstream-glib-builder \
     gdk-pixbuf2 \
     rsvg-pixbuf-loader \
