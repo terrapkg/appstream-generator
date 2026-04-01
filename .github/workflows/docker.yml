@@ -1,5 +1,6 @@
 name: Docker
-
+permissions:
+  contents: read
 on:
   schedule:
     - cron: "15 14 * * *"
