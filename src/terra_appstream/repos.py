@@ -1,5 +1,6 @@
 import logging
 import os
+from fnmatch import fnmatchcase
 import shutil
 from collections.abc import Iterator
 
@@ -11,12 +12,25 @@ SECTION = "main"
 ARCH = "x86_64"
 
 
-def scan_repos(base_dir: str, exclude: tuple[str, ...] = ()) -> Iterator[str]:
-    """Yield the names of the flat RPM repos directly under base_dir."""
+def scan_repos(
+    base_dir: str,
+    exclude_paths: tuple[str, ...] = (),
+    include: tuple[str, ...] = ("*",),
+    exclude: tuple[str, ...] = (),
+) -> Iterator[str]:
+    """Yield the names of the flat RPM repos directly under base_dir.
+
+    include and exclude are glob patterns matched against the repo name.
+    """
     for entry in sorted(os.scandir(base_dir), key=lambda e: e.name):
         if not entry.is_dir() or entry.name.startswith("."):
             continue
-        if entry.path in exclude:
+        if entry.path in exclude_paths:
+            continue
+        if not any(fnmatchcase(entry.name, p) for p in include):
+            continue
+        if any(fnmatchcase(entry.name, p) for p in exclude):
+            logger.debug(f"Skipping {entry.path}, excluded")
             continue
         if not os.path.isfile(os.path.join(entry.path, "repodata", "repomd.xml")):
             logger.debug(f"Skipping {entry.path}, no repodata/repomd.xml")

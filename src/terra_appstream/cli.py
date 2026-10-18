@@ -35,7 +35,10 @@ def main():
 
     repos = list(
         scan_repos(
-            settings.base_dir, exclude=(settings.out_dir, settings.workspace_dir)
+            settings.base_dir,
+            exclude_paths=(settings.out_dir, settings.workspace_dir),
+            include=settings.repos,
+            exclude=settings.exclude_repos,
         )
     )
     if not repos:

@@ -16,6 +16,9 @@ class Settings:
     asgen: str
     # Dated composes to keep per repo; readers may still hold older `latest` targets
     old_limit: int
+    # Glob patterns of repo names to process, and to skip
+    repos: tuple[str, ...]
+    exclude_repos: tuple[str, ...]
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -37,4 +40,11 @@ class Settings:
             html_base_url=os.environ.get("HTML_BASE_URL"),
             asgen=os.environ.get("ASGEN", "appstream-generator"),
             old_limit=max(1, int(os.environ.get("OLD_LIMIT", 5))),
+            repos=_patterns(os.environ.get("REPOS", "*")),
+            # SRPMs never contain AppStream data
+            exclude_repos=_patterns(os.environ.get("EXCLUDE_REPOS", "*-source")),
         )
+
+
+def _patterns(value: str) -> tuple[str, ...]:
+    return tuple(p.strip() for p in value.split(",") if p.strip())
