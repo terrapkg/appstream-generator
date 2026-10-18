@@ -4,6 +4,8 @@ tmp/
 cache/
 db/
 export/
+repos/
+workspace/
 
 # yup, this is developer stuff
 docker-compose.yml

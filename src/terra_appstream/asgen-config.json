@@ -1,0 +1,22 @@
+{
+    "ProjectName": "Terra",
+    "Backend": "rpmmd",
+    "ImageFormat": "png",
+    "Features": {
+        "processDesktop": true,
+        "createScreenshotsStore": false,
+        "optimizePNGSize": false,
+        "screenshotVideos": false,
+        "immutableSuites": false
+    },
+    "Icons": {
+        "64x64": {
+            "cached": true,
+            "remote": false
+        },
+        "128x128": {
+            "cached": true,
+            "remote": false
+        }
+    }
+}
