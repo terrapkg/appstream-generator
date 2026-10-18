@@ -1,0 +1,12 @@
+# Serve ./export-terra with directory listings at http://localhost:8080
+# (the HTML report is at /html/). Run from the repo root:
+#
+#   podman compose -f scripts/docker-compose.yml up
+services:
+  caddy:
+    image: docker.io/library/caddy:2
+    ports:
+      - "8080:80"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro,z
+      - ../export-terra:/srv:ro,z
