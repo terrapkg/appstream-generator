@@ -44,6 +44,8 @@ if [ -n "${TERRA:-}" ]; then
     mounts+=(-v "$mnt:/terra:ro" --security-opt label=disable)
     base_dir=/terra
     suffix=-terra
+    # where scripts/docker-compose.yml serves the report
+    export HTML_BASE_URL=${HTML_BASE_URL:-/report/html}
 fi
 
 podman run --rm "${tty[@]}" \
@@ -54,5 +56,5 @@ podman run --rm "${tty[@]}" \
     -e BASE_DIR="$base_dir" \
     -e OUTPUT_DIR="/app/output$suffix" \
     -e WORKSPACE_DIR="/app/workspace$suffix" \
-    -e REPOS -e EXCLUDE_REPOS -e OLD_LIMIT \
+    -e REPOS -e EXCLUDE_REPOS -e OLD_LIMIT -e HTML_BASE_URL \
     "$IMAGE" "$@"
