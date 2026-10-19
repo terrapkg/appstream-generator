@@ -1,0 +1,57 @@
+name: Terra AppStream lint
+description: Run Terra's appstream-generator setup on a directory of RPMs and report the components and hints it would produce.
+
+inputs:
+  path:
+    description: Directory containing the RPMs to check (searched recursively; .src.rpm files are skipped)
+    required: true
+  fail-on:
+    description: Fail on `error` hints, on `warning` hints (and errors), or `never`
+    default: error
+  image:
+    description: Container image with appstream-generator and terra-appstream
+    default: ghcr.io/terrapkg/appstream-generator:main
+
+  upload_report:
+    description: Upload the exported report as an artifact
+    default: "false"
+    required: false
+
+  report_name:
+    description: Artifact name for the report (must be unique per workflow run, e.g. include the matrix arch)
+    default: appstream-report-${{ github.run_id }}-${{ github.run_attempt }}
+    required: false
+
+runs:
+  using: composite
+  steps:
+    - name: Lint RPMs
+      shell: bash
+      env:
+        INPUT_PATH: ${{ inputs.path }}
+        INPUT_FAIL_ON: ${{ inputs.fail-on }}
+        INPUT_IMAGE: ${{ inputs.image }}
+        INPUT_UPLOAD_REPORT: ${{ inputs.upload_report }}
+      run: |
+        set -euo pipefail
+        path=$(realpath "$INPUT_PATH")
+        summary_dir=$(dirname "$GITHUB_STEP_SUMMARY")
+        mounts=(-v "$path:/rpms:ro" -v "$summary_dir:$summary_dir")
+        args=(--fail-on "$INPUT_FAIL_ON")
+        if [ "$INPUT_UPLOAD_REPORT" = true ]; then
+          mkdir -p "$RUNNER_TEMP/appstream-report"
+          mounts+=(-v "$RUNNER_TEMP/appstream-report:/report")
+          args+=(--report-dir /report)
+        fi
+        docker run --rm "${mounts[@]}" \
+          -e GITHUB_ACTIONS -e GITHUB_STEP_SUMMARY \
+          "$INPUT_IMAGE" \
+          /app/.venv/bin/terra-appstream-lint "${args[@]}" /rpms
+
+    - name: Upload report
+      if: ${{ always() && inputs.upload_report == 'true' }}
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+      with:
+        name: ${{ inputs.report_name }}
+        path: ${{ runner.temp }}/appstream-report
+        if-no-files-found: warn

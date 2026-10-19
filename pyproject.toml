@@ -12,6 +12,7 @@ dependencies = [
 # Not "appstream-generator": that would shadow the asgen binary on PATH
 [project.scripts]
 terra-appstream = "terra_appstream.cli:main"
+terra-appstream-lint = "terra_appstream.lint:main"
 
 [build-system]
 requires = ["uv_build>=0.9,<0.14"]
