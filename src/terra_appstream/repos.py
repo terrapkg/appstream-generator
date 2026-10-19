@@ -23,6 +23,11 @@ class Repo(NamedTuple):
         suite, _, section = name.partition("-")
         return cls(name, suite, section or "main")
 
+    def logger(self, name: str) -> logging.LoggerAdapter:
+        """A logger that adds repo, suite and section to every line."""
+        context = {"repo": self.name, "suite": self.suite, "section": self.section}
+        return logging.LoggerAdapter(logging.getLogger(name), context, merge_extra=True)
+
 
 def scan_repos(
     base_dir: str,

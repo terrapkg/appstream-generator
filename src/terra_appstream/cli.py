@@ -57,16 +57,16 @@ def main():
     # asgen parallelises internally, so repos run one at a time
     failed = []
     for repo in repos:
-        if asgen.run(settings, repo.name, "run", repo.suite, repo.section) != 0:
+        if asgen.run(settings, repo.logger("asgen"), "run", repo.suite, repo.section) != 0:
             failed.append(repo.name)
             continue
         try:
             publish.publish_compose(settings, repo)
         except OSError as e:
-            logging.getLogger(repo.name).error(f"Failed to publish compose: {e}")
+            repo.logger(logger.name).error(f"Failed to publish compose: {e}")
             failed.append(repo.name)
 
-    if asgen.run(settings, "cleanup", "cleanup") != 0:
+    if asgen.run(settings, logging.getLogger("asgen"), "cleanup") != 0:
         failed.append("cleanup")
 
     if failed:

@@ -38,7 +38,7 @@ def compose_files(settings: Settings, repo: Repo) -> dict[str, str]:
 
 def publish_compose(settings: Settings, repo: Repo) -> str:
     """Write OUTPUT_DIR/<repo>/<timestamp>/appstream/ and update `latest` from it."""
-    log = logging.getLogger(repo.name)
+    log = repo.logger(__name__)
     catalog = f"{repo.name}.xml.gz"
     repo_dir = os.path.join(settings.out_dir, repo.name)
     stamp = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -81,11 +81,11 @@ def publish_compose(settings: Settings, repo: Repo) -> str:
             os.remove(entry.path)
     log.info(f"Published {compose}, updated {latest_dir}")
 
-    prune_composes(repo_dir, settings.old_limit, keep=stamp)
+    prune_composes(repo_dir, settings.old_limit, keep=stamp, log=log)
     return compose
 
 
-def prune_composes(repo_dir: str, limit: int, keep: str):
+def prune_composes(repo_dir: str, limit: int, keep: str, log=logger):
     """Keep the `limit` newest dated composes, never removing `keep`."""
     composes = sorted(
         (
@@ -99,7 +99,5 @@ def prune_composes(repo_dir: str, limit: int, keep: str):
         if name == keep:
             continue
         path = os.path.join(repo_dir, name)
-        logger.info(
-            {"msg": "Removing old compose", "operation": "cleanup", "path": path}
-        )
+        log.info("Removing old compose", extra={"operation": "cleanup", "path": path})
         shutil.rmtree(path)

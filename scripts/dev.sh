@@ -35,7 +35,7 @@ if [ -n "${TERRA:-}" ]; then
     mkdir -p "$mnt"
     if ! mountpoint -q "$mnt"; then
         rclone mount "${TERRA_REMOTE:-terra:repos}" "$mnt" \
-            --read-only --daemon --dir-cache-time 1h
+            --read-only --daemon --dir-cache-time 10s
         trap 'fusermount3 -uz "$mnt"' EXIT
         trap 'exit 143' TERM
         trap 'exit 130' INT

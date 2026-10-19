@@ -51,9 +51,8 @@ def write_config(settings: Settings, repos: list[Repo], archive_root: str) -> st
     return config_path
 
 
-def run(settings: Settings, log_name: str, *args: str) -> int:
-    """Run an asgen subcommand, re-logging its output under log_name."""
-    log = logging.getLogger(log_name)
+def run(settings: Settings, log: logging.Logger | logging.LoggerAdapter, *args: str) -> int:
+    """Run an asgen subcommand, re-logging its output through log."""
     # exports to <workspace>/export (Settings.export_dir)
     cmd = [settings.asgen, "-w", settings.workspace_dir, *args]
     log.info(f"Running {' '.join(cmd)}")
@@ -67,7 +66,7 @@ def run(settings: Settings, log_name: str, *args: str) -> int:
     )
     assert process.stdout is not None
 
-    # unprefixed lines inherit the last level
+    # unprefixed lines inherit the last level, except fatal errors from main()
     level = logging.INFO
     for line in process.stdout:
         line = line.rstrip()
@@ -77,6 +76,8 @@ def run(settings: Settings, log_name: str, *args: str) -> int:
         if match:
             level = LEVELS.get(match["level"], logging.INFO)
             log.log(level, match["msg"], extra={"component": match["name"]})
+        elif line.startswith("Error"):
+            log.error(line)
         else:
             log.log(level, line)
 
