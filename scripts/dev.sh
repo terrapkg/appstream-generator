@@ -7,8 +7,6 @@
 #   scripts/dev.sh appstream-generator -w workspace info <pkid>
 #
 # Set TERRA=1 to run against the live bucket instead: it is mounted read-only
-# with rclone (remote TERRA_REMOTE, default terra:repos, at TERRA_MNT) and the run uses
-# ./workspace-terra and ./export-terra. REPOS defaults to terra44 in that mode.
 #
 #   TERRA=1 scripts/dev.sh
 #   TERRA=1 REPOS=terra44,terra44-extras scripts/dev.sh
@@ -47,7 +45,6 @@ if [ -n "${TERRA:-}" ]; then
     mounts+=(-v "$mnt:/terra:ro" --security-opt label=disable)
     base_dir=/terra
     suffix=-terra
-    export REPOS=${REPOS:-terra44}
 fi
 
 podman run --rm "${tty[@]}" \
