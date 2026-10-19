@@ -188,6 +188,7 @@ def main():
             old_limit=1,
             repos=("*",),
             exclude_repos=(),
+            icon_themes_dir=os.environ.get("ICON_THEMES_DIR"),
         )
         repo_dir = Path(settings.base_dir, REPO.name)
         repo_dir.mkdir(parents=True)
@@ -196,7 +197,9 @@ def main():
         subprocess.run(["createrepo_c", "-q", str(repo_dir)], check=True)
 
         os.makedirs(settings.workspace_dir)
-        archive_root = build_archive_tree(settings.base_dir, settings.workspace_dir, [REPO])
+        archive_root = build_archive_tree(
+            settings.base_dir, settings.workspace_dir, [REPO], settings.icon_themes_dir
+        )
         asgen.write_config(settings, [REPO], archive_root)
         if asgen.run(settings, REPO.logger("asgen"), "run", REPO.suite, REPO.section) != 0:
             sys.exit(2)

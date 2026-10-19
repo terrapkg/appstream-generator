@@ -9,6 +9,9 @@ logger = logging.getLogger(__name__)
 
 # Label only: rpmmd ignores arch, and Terra repos mix arches.
 ARCH = "x86_64"
+# asgen looks for icon themes only in packages, so Fedora's theme RPMs are
+# provided as a base suite of every Terra suite
+ICON_THEMES_SUITE = "icon-themes"
 
 
 class Repo(NamedTuple):
@@ -52,7 +55,9 @@ def scan_repos(
         yield entry.name
 
 
-def build_archive_tree(base_dir: str, workspace_dir: str, repos: list[Repo]) -> str:
+def build_archive_tree(
+    base_dir: str, workspace_dir: str, repos: list[Repo], icon_themes_dir: str | None = None
+) -> str:
     """Symlink <workspace>/archive/<suite>/<section>/<arch>/os -> <base_dir>/<repo>.
 
     asgen's rpmmd backend hardcodes that layout; Terra repos are flat.
@@ -70,5 +75,10 @@ def build_archive_tree(base_dir: str, workspace_dir: str, repos: list[Repo]) -> 
         os.makedirs(arch_dir)
         logger.debug(f"Symlinking {os.path.join(base_dir, repo.name)} -> {os.path.join(arch_dir, 'os')}")
         os.symlink(os.path.join(base_dir, repo.name), os.path.join(arch_dir, "os"))
+
+    if icon_themes_dir:
+        arch_dir = os.path.join(archive_root, ICON_THEMES_SUITE, "main", ARCH)
+        os.makedirs(arch_dir)
+        os.symlink(os.path.abspath(icon_themes_dir), os.path.join(arch_dir, "os"))
 
     return archive_root

@@ -18,6 +18,8 @@ class Settings:
     # glob patterns on repo names
     repos: tuple[str, ...]
     exclude_repos: tuple[str, ...]
+    # repo of icon theme RPMs (Adwaita, Breeze, ...) used as every suite's baseSuite
+    icon_themes_dir: str | None = None
 
     @property
     def export_dir(self) -> str:
@@ -46,6 +48,7 @@ class Settings:
             repos=_patterns(os.environ.get("REPOS", "*")),
             # SRPMs never contain AppStream data
             exclude_repos=_patterns(os.environ.get("EXCLUDE_REPOS", "*-source")),
+            icon_themes_dir=os.environ.get("ICON_THEMES_DIR"),
         )
 
 

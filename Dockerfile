@@ -41,6 +41,14 @@ RUN git clone --depth 1 -b ${ASGEN_VERSION} https://github.com/ximion/appstream-
         -Dbackward=false \
     && meson install -C asgen/build
 
+# asgen only finds icon themes in packages, so the stock icons (Adwaita, Breeze)
+# come from Fedora's theme RPMs, served as a base suite (ICON_THEMES_DIR).
+FROM ghcr.io/terrapkg/builder:frawhide AS icon-themes
+RUN --mount=type=cache,target=/var/cache/libdnf5,sharing=locked \
+    dnf download --setopt=keepcache=True --destdir /icon-themes \
+    hicolor-icon-theme adwaita-icon-theme adwaita-icon-theme-legacy breeze-icon-theme \
+    && createrepo_c /icon-themes
+
 FROM ghcr.io/terrapkg/builder:frawhide AS base
 
 RUN --mount=type=cache,target=/var/cache/libdnf5,sharing=locked \
@@ -52,6 +60,8 @@ RUN --mount=type=cache,target=/var/cache/libdnf5,sharing=locked \
     uv
 
 COPY --from=asgen-build /usr/local /usr/local
+COPY --from=icon-themes /icon-themes /usr/share/terra-appstream/icon-themes
+ENV ICON_THEMES_DIR=/usr/share/terra-appstream/icon-themes
 RUN echo /usr/local/lib64 > /etc/ld.so.conf.d/usr-local.conf && ldconfig \
     && appstream-generator --version
 

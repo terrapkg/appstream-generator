@@ -50,7 +50,7 @@ def main():
     os.makedirs(settings.workspace_dir, exist_ok=True)
     os.makedirs(settings.out_dir, exist_ok=True)
     archive_root = build_archive_tree(
-        settings.base_dir, settings.workspace_dir, repos
+        settings.base_dir, settings.workspace_dir, repos, settings.icon_themes_dir
     )
     asgen.write_config(settings, repos, archive_root)
 

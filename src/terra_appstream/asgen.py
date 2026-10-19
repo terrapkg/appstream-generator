@@ -5,7 +5,7 @@ import re
 import subprocess
 from importlib.resources import files
 
-from terra_appstream.repos import ARCH, Repo
+from terra_appstream.repos import ARCH, ICON_THEMES_SUITE, Repo
 from terra_appstream.settings import Settings
 
 logger = logging.getLogger(__name__)
@@ -42,6 +42,8 @@ def write_config(settings: Settings, repos: list[Repo], archive_root: str) -> st
     for repo in repos:
         suite = suites.setdefault(repo.suite, {"sections": [], "architectures": [ARCH]})
         suite["sections"].append(repo.section)
+        if settings.icon_themes_dir:
+            suite["baseSuite"] = ICON_THEMES_SUITE
     config["Suites"] = suites
 
     config_path = os.path.join(settings.workspace_dir, "asgen-config.json")
