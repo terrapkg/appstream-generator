@@ -1,5 +1,4 @@
-# Browse the local export (dev only).
-# Plain :80 so Caddy doesn't try to get certificates.
+# Dev only; plain :80 so Caddy skips TLS.
 :80 {
 	root * /srv
 	file_server browse

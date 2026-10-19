@@ -1,5 +1,5 @@
-# Serve ./export-terra with directory listings at http://localhost:8080
-# (the HTML report is at /html/). Run from the repo root:
+# Browse the TERRA=1 dev output at http://localhost:8080
+# (/output/ is what Subatomic reads, /report/html/ is asgen's report).
 #
 #   podman compose -f scripts/docker-compose.yml up
 services:
@@ -9,4 +9,5 @@ services:
       - "8080:80"
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro,z
-      - ../export-terra:/srv:ro,z
+      - ../export-terra:/srv/output:ro,z
+      - ../workspace-terra/export:/srv/report:ro,z

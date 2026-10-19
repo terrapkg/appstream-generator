@@ -52,14 +52,8 @@ def write_config(settings: Settings, repos: list[str], archive_root: str) -> str
 def run(settings: Settings, log_name: str, *args: str) -> int:
     """Run an asgen subcommand, re-logging its output under log_name."""
     log = logging.getLogger(log_name)
-    cmd = [
-        settings.asgen,
-        "-w",
-        settings.workspace_dir,
-        "--export-dir",
-        settings.out_dir,
-        *args,
-    ]
+    # exports to <workspace>/export (Settings.export_dir)
+    cmd = [settings.asgen, "-w", settings.workspace_dir, *args]
     log.info(f"Running {' '.join(cmd)}")
 
     process = subprocess.Popen(
@@ -71,7 +65,7 @@ def run(settings: Settings, log_name: str, *args: str) -> int:
     )
     assert process.stdout is not None
 
-    # unprefixed lines (continuations, glib output) inherit the last level
+    # unprefixed lines inherit the last level
     level = logging.INFO
     for line in process.stdout:
         line = line.rstrip()

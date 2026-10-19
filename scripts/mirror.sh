@@ -1,17 +1,15 @@
 #!/bin/bash
-# Mirror a handful of packages from a Terra repo into ./repos/<repo>/ for
-# local testing, then generate repodata for them.
+# Fetch the newest builds of a few packages from a Terra repo into
+# ./repos/<repo>/ and generate repodata.
 #
-#   scripts/mirror.sh [REPO] [PACKAGE...]
-#
-# ARCHES selects which builds to fetch (default: "x86_64 noarch").
+#   [ARCHES="x86_64 noarch"] scripts/mirror.sh [REPO] [PACKAGE...]
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
 REPO=${1:-terra44}
 shift || true
-# ghostty is in the default set because asgen drops it (hardlinked icons)
+# ghostty: asgen drops it (hardlinked icons)
 if [ $# -gt 0 ]; then
     PACKAGES=("$@")
 else

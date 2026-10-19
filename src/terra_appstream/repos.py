@@ -6,8 +6,7 @@ from collections.abc import Iterator
 
 logger = logging.getLogger(__name__)
 
-# rpmmd does not filter by arch, and Terra repos mix arches, so every repo gets
-# a single label. It only shows up in file names (Components-x86_64.xml.gz).
+# Labels only: rpmmd ignores arch, and Terra repos mix arches.
 SECTION = "main"
 ARCH = "x86_64"
 
@@ -18,10 +17,7 @@ def scan_repos(
     include: tuple[str, ...] = ("*",),
     exclude: tuple[str, ...] = (),
 ) -> Iterator[str]:
-    """Yield the names of the flat RPM repos directly under base_dir.
-
-    include and exclude are glob patterns matched against the repo name.
-    """
+    """Yield names of repos under base_dir, filtered by include/exclude globs."""
     for entry in sorted(os.scandir(base_dir), key=lambda e: e.name):
         if not entry.is_dir() or entry.name.startswith("."):
             continue
@@ -39,14 +35,13 @@ def scan_repos(
 
 
 def build_archive_tree(base_dir: str, workspace_dir: str, repos: list[str]) -> str:
-    """Create <workspace>/archive/<repo>/main/<arch>/os -> <base_dir>/<repo>.
+    """Symlink <workspace>/archive/<repo>/main/<arch>/os -> <base_dir>/<repo>.
 
-    asgen's rpmmd backend hardcodes the <suite>/<section>/<arch>/os layout,
-    but Terra repos are flat, so we give it a shadow tree of symlinks rather
-    than writing into the mirror. Returns the tree's root for `ArchiveRoot`.
+    asgen's rpmmd backend hardcodes that layout; Terra repos are flat.
+    Returns the root, for ArchiveRoot.
     """
     archive_root = os.path.join(workspace_dir, "archive")
-    # only contains symlinks, rmtree does not follow them
+    # symlinks only; rmtree doesn't follow them
     if os.path.lexists(archive_root):
         logger.debug(f"Removing old archive tree {archive_root}")
         shutil.rmtree(archive_root)

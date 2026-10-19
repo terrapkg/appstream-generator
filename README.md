@@ -24,11 +24,12 @@ uv run terra-appstream
 - `BASE_DIR`: the mirror; every subdirectory with `repodata/repomd.xml` is one repo.
 - `OUTPUT_DIR`: export root. It contains `<repo>/latest/appstream/{<repo>.xml.gz,<repo>-icons-64x64.tar.gz}`,
   which [Subatomic](https://github.com/FyraLabs/subatomic/tree/v0) injects into the repo's `repomd.xml`
-  (point `SUBATOMIC_APPSTREAM_DIR` at this directory). It also contains appstream-generator's own export in
-  `{data,hints,html,media}/<repo>/main/`. On Terra, this is `$BASE_DIR/appstream`.
+  (point `SUBATOMIC_APPSTREAM_DIR` at this directory). On Terra, this is `$BASE_DIR/appstream`.
+  It can be a network mount: only these finished files are written there.
 - `OLD_LIMIT` (optional, default 5): dated composes to keep per repo.
-- `WORKSPACE_DIR`: appstream-generator's workspace. Holds the package cache, so it must
-  persist between runs and should not be publicly served.
+- `WORKSPACE_DIR`: appstream-generator's workspace. Holds the package cache and its own export
+  (`export/{data,hints,html,media}`, including the HTML report), so it must persist between runs.
+  Keep it on a local disk.
 - `MEDIA_BASE_URL`, `HTML_BASE_URL` (optional): public URLs of `OUTPUT_DIR/media` and `OUTPUT_DIR/html`.
 
 ## Requirements

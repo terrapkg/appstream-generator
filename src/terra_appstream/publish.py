@@ -1,14 +1,7 @@
-"""Publish asgen's export in the layout Subatomic (v0) reads.
+"""Publish asgen's export as <repo>/latest/appstream/, which Subatomic (v0) reads.
 
-Subatomic's modifyRepoAppStream picks up, for each repo:
-
-    $SUBATOMIC_APPSTREAM_DIR/<repo>/latest/appstream/<repo>.xml.gz
-    $SUBATOMIC_APPSTREAM_DIR/<repo>/latest/appstream/<repo>-icons-64x64.tar.gz
-
-It drops the repo's appstream entries on every publish and re-adds only the
-files it finds, so `latest` must never be missing or half-written. Each run
-therefore writes a fresh dated compose and swaps the `latest` symlink to it
-with a rename, as the appstream-builder pipeline did.
+OUTPUT_DIR is the bucket through a FUSE mount, so only plain file writes:
+no symlinks, and no rename-over (it races the mount's upload and loses files).
 """
 
 import logging
@@ -21,9 +14,6 @@ from terra_appstream.settings import Settings
 
 logger = logging.getLogger(__name__)
 
-# asgen's export dirs, which share OUTPUT_DIR with the per-repo composes
-RESERVED_NAMES = {"data", "hints", "html", "media"}
-
 # @2 tarballs are left out: libappstream guesses the size by substring and
 # files *-64x64@2.tar.gz under 64x64/
 ICON_SIZES = ["64x64", "128x128"]
@@ -31,7 +21,7 @@ ICON_SIZES = ["64x64", "128x128"]
 
 def compose_files(settings: Settings, repo: str) -> dict[str, str]:
     """Map compose file names to their source in asgen's export."""
-    data_dir = os.path.join(settings.out_dir, "data", repo, SECTION)
+    data_dir = os.path.join(settings.export_dir, "data", repo, SECTION)
     files = {f"{repo}.xml.gz": os.path.join(data_dir, f"Components-{ARCH}.xml.gz")}
     for size in ICON_SIZES:
         files[f"{repo}-icons-{size}.tar.gz"] = os.path.join(
@@ -41,39 +31,40 @@ def compose_files(settings: Settings, repo: str) -> dict[str, str]:
 
 
 def publish_compose(settings: Settings, repo: str) -> str:
-    """Write OUTPUT_DIR/<repo>/<timestamp>/appstream/ and point `latest` at it."""
+    """Write OUTPUT_DIR/<repo>/<timestamp>/appstream/ and update `latest` from it."""
     log = logging.getLogger(repo)
     repo_dir = os.path.join(settings.out_dir, repo)
     stamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
-    files = compose_files(settings, repo)
-    catalog = next(iter(files.values()))
-    if not os.path.isfile(catalog):
-        raise FileNotFoundError(f"asgen produced no catalog at {catalog}")
+    files = {}
+    for name, src in compose_files(settings, repo).items():
+        if os.path.isfile(src):
+            files[name] = src
+        else:
+            log.warning(f"Missing {src}, leaving {name} out")
+    if f"{repo}.xml.gz" not in files:
+        raise FileNotFoundError(f"asgen produced no catalog for {repo}")
 
-    # build under a dot-name so a half-written compose never looks valid
-    staging = os.path.join(repo_dir, f".{stamp}")
-    if os.path.lexists(staging):
-        shutil.rmtree(staging)
-    os.makedirs(os.path.join(staging, "appstream"))
+    # history only; nothing reads it
+    compose = os.path.join(repo_dir, stamp, "appstream")
+    os.makedirs(compose, exist_ok=True)
     for name, src in files.items():
-        if not os.path.isfile(src):
-            log.warning(f"Missing {src}, leaving {name} out of the compose")
-            continue
-        # copy, not link: asgen rewrites its export on the next run
-        shutil.copyfile(src, os.path.join(staging, "appstream", name))
+        shutil.copyfile(src, os.path.join(compose, name))
 
-    compose = os.path.join(repo_dir, stamp)
-    os.rename(staging, compose)
-
-    # atomic `ln -sfn`: rename a fresh symlink over the old one
     latest = os.path.join(repo_dir, "latest")
-    tmp_link = os.path.join(repo_dir, ".latest")
-    if os.path.lexists(tmp_link):
-        os.remove(tmp_link)
-    os.symlink(stamp, tmp_link)
-    os.replace(tmp_link, latest)
-    log.info(f"Published {compose}, latest -> {stamp}")
+    if os.path.islink(latest):
+        # from the old symlink layout
+        os.remove(latest)
+    latest_dir = os.path.join(latest, "appstream")
+    os.makedirs(latest_dir, exist_ok=True)
+    # catalog last, so it never references missing icons
+    for name in sorted(files, key=lambda n: n == f"{repo}.xml.gz"):
+        shutil.copyfile(os.path.join(compose, name), os.path.join(latest_dir, name))
+    # drop files this compose no longer has
+    for entry in os.scandir(latest_dir):
+        if entry.name not in files:
+            os.remove(entry.path)
+    log.info(f"Published {compose}, updated {latest_dir}")
 
     prune_composes(repo_dir, settings.old_limit, keep=stamp)
     return compose

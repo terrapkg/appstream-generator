@@ -8,21 +8,24 @@ from dotenv import load_dotenv
 class Settings:
     base_dir: str
     out_dir: str
-    # Holds asgen's LMDB cache, so it must persist between runs
+    # asgen's cache; must persist between runs
     workspace_dir: str
-    # Public URLs the exported data is served from (optional)
     media_base_url: str | None
     html_base_url: str | None
     asgen: str
-    # Dated composes to keep per repo; readers may still hold older `latest` targets
+    # dated composes kept per repo
     old_limit: int
-    # Glob patterns of repo names to process, and to skip
+    # glob patterns on repo names
     repos: tuple[str, ...]
     exclude_repos: tuple[str, ...]
 
+    @property
+    def export_dir(self) -> str:
+        """asgen's own export, including the HTML report."""
+        return os.path.join(self.workspace_dir, "export")
+
     @classmethod
     def from_env(cls) -> "Settings":
-        # note: this is for DX, not really needed
         load_dotenv()
 
         required = ["BASE_DIR", "OUTPUT_DIR", "WORKSPACE_DIR"]
