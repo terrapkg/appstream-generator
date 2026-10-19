@@ -1,7 +1,7 @@
 #!/bin/bash
 # Run terra-appstream in the toolchain image against ./repos, writing
-# ./workspace and ./export. TERRA=1 uses the live bucket (rclone remote
-# terra:repos, mounted read-only) with ./workspace-terra and ./export-terra.
+# ./workspace and ./output. TERRA=1 uses the live bucket (rclone remote
+# terra:repos, mounted read-only) with ./workspace-terra and ./output-terra.
 #
 #   scripts/dev.sh [command...]
 #   TERRA=1 REPOS=terra44,terra44-extras scripts/dev.sh
@@ -46,7 +46,7 @@ podman run --rm "${tty[@]}" \
     -w /app \
     -e UV_PROJECT_ENVIRONMENT=/tmp/venv \
     -e BASE_DIR="$base_dir" \
-    -e OUTPUT_DIR="/app/export$suffix" \
+    -e OUTPUT_DIR="/app/output$suffix" \
     -e WORKSPACE_DIR="/app/workspace$suffix" \
     -e REPOS -e EXCLUDE_REPOS -e OLD_LIMIT \
     "$IMAGE" "$@"

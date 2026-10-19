@@ -6,7 +6,8 @@ db/
 export/
 repos/
 workspace/
-export-terra/
+output/
+output-terra/
 workspace-terra/
 
 # yup, this is developer stuff

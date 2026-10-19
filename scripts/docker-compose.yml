@@ -9,5 +9,5 @@ services:
       - "8080:80"
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro,z
-      - ../export-terra:/srv/output:ro,z
+      - ../output-terra:/srv/output:ro,z
       - ../workspace-terra/export:/srv/report:ro,z
