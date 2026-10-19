@@ -28,11 +28,17 @@ suffix=""
 if [ -n "${TERRA:-}" ]; then
     # outside the repo, or the :z relabel would recurse into it
     mnt=${TERRA_MNT:-${XDG_RUNTIME_DIR:-/tmp}/terra-appstream/terra}
+    # left behind if rclone was killed (e.g. the systemd unit was stopped)
+    if ! stat "$mnt" >/dev/null 2>&1 && grep -q " $mnt fuse" /proc/mounts; then
+        fusermount3 -uz "$mnt"
+    fi
     mkdir -p "$mnt"
     if ! mountpoint -q "$mnt"; then
         rclone mount "${TERRA_REMOTE:-terra:repos}" "$mnt" \
             --read-only --daemon --dir-cache-time 1h
-        trap 'fusermount3 -u "$mnt" 2>/dev/null || fusermount -u "$mnt"' EXIT
+        trap 'fusermount3 -uz "$mnt"' EXIT
+        trap 'exit 143' TERM
+        trap 'exit 130' INT
     fi
     # FUSE mounts can't be relabelled
     mounts+=(-v "$mnt:/terra:ro" --security-opt label=disable)
