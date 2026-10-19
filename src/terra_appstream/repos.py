@@ -3,12 +3,25 @@ import os
 from fnmatch import fnmatchcase
 import shutil
 from collections.abc import Iterator
+from typing import NamedTuple
 
 logger = logging.getLogger(__name__)
 
-# Labels only: rpmmd ignores arch, and Terra repos mix arches.
-SECTION = "main"
+# Label only: rpmmd ignores arch, and Terra repos mix arches.
 ARCH = "x86_64"
+
+
+class Repo(NamedTuple):
+    """A repo as an asgen suite/section: terra44-extras is terra44/extras."""
+
+    name: str
+    suite: str
+    section: str
+
+    @classmethod
+    def from_name(cls, name: str) -> "Repo":
+        suite, _, section = name.partition("-")
+        return cls(name, suite, section or "main")
 
 
 def scan_repos(
@@ -34,8 +47,8 @@ def scan_repos(
         yield entry.name
 
 
-def build_archive_tree(base_dir: str, workspace_dir: str, repos: list[str]) -> str:
-    """Symlink <workspace>/archive/<repo>/main/<arch>/os -> <base_dir>/<repo>.
+def build_archive_tree(base_dir: str, workspace_dir: str, repos: list[Repo]) -> str:
+    """Symlink <workspace>/archive/<suite>/<section>/<arch>/os -> <base_dir>/<repo>.
 
     asgen's rpmmd backend hardcodes that layout; Terra repos are flat.
     Returns the root, for ArchiveRoot.
@@ -47,10 +60,10 @@ def build_archive_tree(base_dir: str, workspace_dir: str, repos: list[str]) -> s
         shutil.rmtree(archive_root)
 
     for repo in repos:
-        logger.debug(f"Creating archive tree for {repo}")
-        arch_dir = os.path.join(archive_root, repo, SECTION, ARCH)
+        logger.debug(f"Creating archive tree for {repo.name}")
+        arch_dir = os.path.join(archive_root, repo.suite, repo.section, ARCH)
         os.makedirs(arch_dir)
-        logger.debug(f"Symlinking {os.path.join(base_dir, repo)} -> {os.path.join(arch_dir, 'os')}")
-        os.symlink(os.path.join(base_dir, repo), os.path.join(arch_dir, "os"))
+        logger.debug(f"Symlinking {os.path.join(base_dir, repo.name)} -> {os.path.join(arch_dir, 'os')}")
+        os.symlink(os.path.join(base_dir, repo.name), os.path.join(arch_dir, "os"))
 
     return archive_root

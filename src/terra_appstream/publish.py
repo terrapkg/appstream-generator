@@ -4,12 +4,13 @@ OUTPUT_DIR is the bucket through a FUSE mount, so only plain file writes:
 no symlinks, and no rename-over (it races the mount's upload and loses files).
 """
 
+import gzip
 import logging
 import os
 import shutil
 from datetime import datetime
 
-from terra_appstream.repos import ARCH, SECTION
+from terra_appstream.repos import ARCH, Repo
 from terra_appstream.settings import Settings
 
 logger = logging.getLogger(__name__)
@@ -18,38 +19,52 @@ logger = logging.getLogger(__name__)
 # files *-64x64@2.tar.gz under 64x64/
 ICON_SIZES = ["64x64", "128x128"]
 
+EMPTY_CATALOG = (
+    '<?xml version="1.0" encoding="utf-8"?>\n'
+    '<components version="1.0" origin="{origin}"/>\n'
+)
 
-def compose_files(settings: Settings, repo: str) -> dict[str, str]:
+
+def compose_files(settings: Settings, repo: Repo) -> dict[str, str]:
     """Map compose file names to their source in asgen's export."""
-    data_dir = os.path.join(settings.export_dir, "data", repo, SECTION)
-    files = {f"{repo}.xml.gz": os.path.join(data_dir, f"Components-{ARCH}.xml.gz")}
+    data_dir = os.path.join(settings.export_dir, "data", repo.suite, repo.section)
+    files = {f"{repo.name}.xml.gz": os.path.join(data_dir, f"Components-{ARCH}.xml.gz")}
     for size in ICON_SIZES:
-        files[f"{repo}-icons-{size}.tar.gz"] = os.path.join(
+        files[f"{repo.name}-icons-{size}.tar.gz"] = os.path.join(
             data_dir, f"icons-{size}.tar.gz"
         )
     return files
 
 
-def publish_compose(settings: Settings, repo: str) -> str:
+def publish_compose(settings: Settings, repo: Repo) -> str:
     """Write OUTPUT_DIR/<repo>/<timestamp>/appstream/ and update `latest` from it."""
-    log = logging.getLogger(repo)
-    repo_dir = os.path.join(settings.out_dir, repo)
+    log = logging.getLogger(repo.name)
+    catalog = f"{repo.name}.xml.gz"
+    repo_dir = os.path.join(settings.out_dir, repo.name)
     stamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
+    sources = compose_files(settings, repo)
     files = {}
-    for name, src in compose_files(settings, repo).items():
-        if os.path.isfile(src):
-            files[name] = src
-        else:
-            log.warning(f"Missing {src}, leaving {name} out")
-    if f"{repo}.xml.gz" not in files:
-        raise FileNotFoundError(f"asgen produced no catalog for {repo}")
+    # asgen writes nothing for sections without apps (drivers, libraries)
+    has_apps = os.path.isfile(sources[catalog])
+    if has_apps:
+        for name, src in sources.items():
+            if os.path.isfile(src):
+                files[name] = src
+            else:
+                log.warning(f"Missing {src}, leaving {name} out")
 
     # history only; nothing reads it
     compose = os.path.join(repo_dir, stamp, "appstream")
     os.makedirs(compose, exist_ok=True)
     for name, src in files.items():
         shutil.copyfile(src, os.path.join(compose, name))
+    if not has_apps:
+        log.info("No apps, publishing an empty catalog")
+        origin = f"terra-{repo.suite}-{repo.section}"
+        with gzip.open(os.path.join(compose, catalog), "wt", encoding="utf-8") as f:
+            f.write(EMPTY_CATALOG.format(origin=origin))
+        files[catalog] = None
 
     latest = os.path.join(repo_dir, "latest")
     if os.path.islink(latest):
@@ -58,7 +73,7 @@ def publish_compose(settings: Settings, repo: str) -> str:
     latest_dir = os.path.join(latest, "appstream")
     os.makedirs(latest_dir, exist_ok=True)
     # catalog last, so it never references missing icons
-    for name in sorted(files, key=lambda n: n == f"{repo}.xml.gz"):
+    for name in sorted(files, key=lambda n: n == catalog):
         shutil.copyfile(os.path.join(compose, name), os.path.join(latest_dir, name))
     # drop files this compose no longer has
     for entry in os.scandir(latest_dir):

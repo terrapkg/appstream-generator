@@ -5,7 +5,7 @@ import re
 import subprocess
 from importlib.resources import files
 
-from terra_appstream.repos import ARCH, SECTION
+from terra_appstream.repos import ARCH, Repo
 from terra_appstream.settings import Settings
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ LEVELS = {
 }
 
 
-def write_config(settings: Settings, repos: list[str], archive_root: str) -> str:
+def write_config(settings: Settings, repos: list[Repo], archive_root: str) -> str:
     """Fill in the asgen-config.json template and write it to the workspace."""
     config = json.loads(
         files("terra_appstream").joinpath("asgen-config.json").read_text()
@@ -38,9 +38,11 @@ def write_config(settings: Settings, repos: list[str], archive_root: str) -> str
         config["MediaBaseUrl"] = settings.media_base_url
     if settings.html_base_url:
         config["HtmlBaseUrl"] = settings.html_base_url
-    config["Suites"] = {
-        repo: {"sections": [SECTION], "architectures": [ARCH]} for repo in repos
-    }
+    suites = {}
+    for repo in repos:
+        suite = suites.setdefault(repo.suite, {"sections": [], "architectures": [ARCH]})
+        suite["sections"].append(repo.section)
+    config["Suites"] = suites
 
     config_path = os.path.join(settings.workspace_dir, "asgen-config.json")
     with open(config_path, "w") as f:
