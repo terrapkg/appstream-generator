@@ -1,0 +1,9 @@
+# Dev only; plain :80 so Caddy skips TLS.
+:80 {
+	root * /srv
+	# reports rendered without HTML_BASE_URL link /static/ at the root
+	rewrite /static/* /report/html{uri}
+	# icons, linked at the root when MEDIA_BASE_URL isn't set
+	rewrite /pool/* /report/media{uri}
+	file_server browse
+}
