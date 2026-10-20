@@ -77,8 +77,11 @@ def build_archive_tree(
         os.symlink(os.path.join(base_dir, repo.name), os.path.join(arch_dir, "os"))
 
     if icon_themes_dir:
-        arch_dir = os.path.join(archive_root, ICON_THEMES_SUITE, "main", ARCH)
-        os.makedirs(arch_dir)
-        os.symlink(os.path.abspath(icon_themes_dir), os.path.join(arch_dir, "os"))
+        # asgen reads a base suite under the section it is processing (and main),
+        # so the theme repo is linked in as every section in use
+        for section in sorted({repo.section for repo in repos} | {"main"}):
+            arch_dir = os.path.join(archive_root, ICON_THEMES_SUITE, section, ARCH)
+            os.makedirs(arch_dir)
+            os.symlink(os.path.abspath(icon_themes_dir), os.path.join(arch_dir, "os"))
 
     return archive_root

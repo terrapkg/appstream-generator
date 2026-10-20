@@ -26,6 +26,13 @@ base_dir=/app/repos
 suffix=""
 
 if [ -n "${TERRA:-}" ]; then
+    # one TERRA run at a time: runs share the workspace and the mount
+    mkdir -p "${XDG_RUNTIME_DIR:-/tmp}/terra-appstream"
+    exec 9>"${XDG_RUNTIME_DIR:-/tmp}/terra-appstream/lock"
+    if ! flock -n 9; then
+        echo "dev.sh: another TERRA=1 run is in progress, skipping" >&2
+        exit 0
+    fi
     # outside the repo, or the :z relabel would recurse into it
     mnt=${TERRA_MNT:-${XDG_RUNTIME_DIR:-/tmp}/terra-appstream/terra}
     # left behind if rclone was killed (e.g. the systemd unit was stopped)
